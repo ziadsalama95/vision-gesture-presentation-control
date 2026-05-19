@@ -1,0 +1,63 @@
+{
+  "actions": {
+    "dry_run": false,
+    "enabled": true,
+    "focus_before_action": true,
+    "key_profile": {
+      "exit_slideshow": [
+        "esc"
+      ],
+      "next_slide": [
+        "right"
+      ],
+      "previous_slide": [
+        "left"
+      ],
+      "start_slideshow": [
+        "f5"
+      ]
+    },
+    "require_target_window": false,
+    "target_window_titles": [
+      "PowerPoint",
+      "Slide Show"
+    ]
+  },
+  "bindings": {
+    "Closed_Fist": "exit_slideshow",
+    "Thumb_Down": "previous_slide",
+    "Thumb_Up": "next_slide",
+    "Victory": "start_slideshow"
+  },
+  "camera": {
+    "fallback_index": 1,
+    "fps": 30,
+    "height": 540,
+    "mirror": true,
+    "primary_index": 0,
+    "width": 960
+  },
+  "face": {
+    "active_grace_seconds": 1.25,
+    "ambiguous_rank_gap": 0.15,
+    "foreground_override_ratio": 1.12,
+    "nms_threshold": 0.3,
+    "score_threshold": 0.6,
+    "sface_cosine_threshold": 0.363,
+    "stable_seconds": 0.25,
+    "top_k": 5000,
+    "track_iou_threshold": 0.25,
+    "unknown_retry_seconds": 2.0
+  },
+  "gestures": {
+    "action_cooldown_seconds": 1.0,
+    "confidence_threshold": 0.55,
+    "enabled": true,
+    "stable_seconds": 0.35
+  },
+  "ui": {
+    "overlay_alpha": 0.58,
+    "show_legend": true,
+    "show_performance": true
+  }
+}

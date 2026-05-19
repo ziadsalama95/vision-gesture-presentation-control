@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+
+.venv/
+venv/
+env/
+
+config/*.broken
+
+# Runtime data and downloaded model assets can be large or user-specific.
+data/db/*
+models/*.onnx
+models/*.task
+
+# Keep the directories documented even when runtime files are removed.
+!models/.gitkeep
+!data/.gitkeep
+!data/db/.gitkeep
