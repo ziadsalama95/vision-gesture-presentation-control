@@ -25,7 +25,14 @@ from typing import List, Optional
 import cv2
 
 from .actions import PresentationActionController
-from .config import CONFIG_PATH, DB_PATH, ensure_dirs, load_config, save_json
+from .config import (
+    CONFIG_PATH,
+    DB_PATH,
+    SESSION_LOG_PATH,
+    ensure_dirs,
+    load_config,
+    save_json,
+)
 from .face import (
     FaceIndex,
     FaceTracker,
@@ -35,8 +42,9 @@ from .face import (
     crop_face,
     detect_faces,
 )
-from .gestures import GestureCommandResolver, MediaPipeGestureEngine
+from .gestures import GestureCommandResolver, MediaPipeHandEngine
 from .models import ensure_face_models, ensure_gesture_model
+from .session_log import SessionLogger
 from .ui import (
     PerformanceStats,
     draw_action_toast,
@@ -50,6 +58,7 @@ from .ui import (
     draw_legend,
     draw_locked_indicator,
     draw_performance,
+    draw_session_log,
     draw_status_bar,
 )
 
@@ -198,9 +207,21 @@ def main() -> None:
     face_index.reload()
 
     tracker = FaceTracker(config, face_index)
-    gesture_engine = MediaPipeGestureEngine(config)
+    gesture_engine = MediaPipeHandEngine(config)
     actions = PresentationActionController(config)
     resolver = GestureCommandResolver(config, actions)
+    session_logger = SessionLogger(
+        SESSION_LOG_PATH,
+        enabled=bool(config.get("logging", {}).get("enabled", True)),
+    )
+    resolver.session_logger = session_logger
+    # Tell the resolver how to discover "who" is currently authorized,
+    # so the session log can attribute each action.
+    resolver.actor_provider = lambda: (
+        tracker.active_track(time.time()).identity
+        if tracker.active_track(time.time())
+        else ""
+    )
     stats = PerformanceStats()
 
     cap = _open_camera(config)
@@ -359,6 +380,7 @@ def main() -> None:
             )
             draw_locked_indicator(frame, tracker, now, suppress=capture_mode)
             draw_performance(frame, config, stats)
+            draw_session_log(frame, session_logger.recent_rows(3))
             draw_help_hint(frame)
 
             cv2.imshow("Vision Gesture Presentation Control", frame)

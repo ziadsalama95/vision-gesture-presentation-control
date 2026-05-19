@@ -9,6 +9,7 @@ config/*.broken
 
 # Runtime data and downloaded model assets can be large or user-specific.
 data/db/*
+data/session_log.csv
 models/*.onnx
 models/*.task
 

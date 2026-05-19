@@ -1,11 +1,20 @@
 {
   "actions": {
-    "dry_run": false,
+    "dry_run": true,
     "enabled": true,
     "focus_before_action": true,
     "key_profile": {
+      "blank_screen": [
+        "b"
+      ],
       "exit_slideshow": [
         "esc"
+      ],
+      "first_slide": [
+        "home"
+      ],
+      "last_slide": [
+        "end"
       ],
       "next_slide": [
         "right"
@@ -25,6 +34,9 @@
   },
   "bindings": {
     "Closed_Fist": "exit_slideshow",
+    "OK": "last_slide",
+    "Open_Palm": "blank_screen",
+    "Three": "first_slide",
     "Thumb_Down": "previous_slide",
     "Thumb_Up": "next_slide",
     "Victory": "start_slideshow"
@@ -42,6 +54,7 @@
     "ambiguous_rank_gap": 0.15,
     "foreground_override_ratio": 1.12,
     "nms_threshold": 0.3,
+    "quality_refresh_seconds": 0.5,
     "score_threshold": 0.6,
     "sface_cosine_threshold": 0.363,
     "stable_seconds": 0.25,
@@ -53,7 +66,14 @@
     "action_cooldown_seconds": 1.0,
     "confidence_threshold": 0.55,
     "enabled": true,
-    "stable_seconds": 0.35
+    "finger_extended_ratio": 1.1,
+    "ok_pinch_ratio": 0.4,
+    "stable_seconds": 0.35,
+    "thumb_extended_ratio": 1.2,
+    "thumb_up_y_offset": 0.05
+  },
+  "logging": {
+    "enabled": true
   },
   "ui": {
     "overlay_alpha": 0.58,

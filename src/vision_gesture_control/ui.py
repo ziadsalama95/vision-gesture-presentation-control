@@ -206,6 +206,18 @@ def _draw_action_icon(
     elif action == "exit_slideshow":
         cv2.line(frame, (cx - s, cy - s), (cx + s, cy + s), color, 3, cv2.LINE_AA)
         cv2.line(frame, (cx - s, cy + s), (cx + s, cy - s), color, 3, cv2.LINE_AA)
+    elif action == "blank_screen":
+        cv2.rectangle(frame, (cx - s, cy - s), (cx + s, cy + s), color, -1, cv2.LINE_AA)
+    elif action == "first_slide":
+        bar = max(2, size // 6)
+        cv2.rectangle(frame, (cx - s, cy - s), (cx - s + bar, cy + s), color, -1, cv2.LINE_AA)
+        pts = np.array([[cx + s, cy - s], [cx - s + bar + 3, cy], [cx + s, cy + s]], np.int32)
+        cv2.fillPoly(frame, [pts], color, cv2.LINE_AA)
+    elif action == "last_slide":
+        bar = max(2, size // 6)
+        cv2.rectangle(frame, (cx + s - bar, cy - s), (cx + s, cy + s), color, -1, cv2.LINE_AA)
+        pts = np.array([[cx - s, cy - s], [cx + s - bar - 3, cy], [cx - s, cy + s]], np.int32)
+        cv2.fillPoly(frame, [pts], color, cv2.LINE_AA)
     else:
         cv2.circle(frame, (cx, cy), s, color, -1, cv2.LINE_AA)
 
@@ -237,10 +249,13 @@ def draw_faces(
         font = cv2.FONT_HERSHEY_DUPLEX
         label = track.identity
         sim_text = f"{track.similarity:.2f}"
+        sharp_text = f"q{int(min(999, track.sharpness)):d}" if track.sharpness > 0 else ""
         (lw, lh), _ = cv2.getTextSize(label, font, 0.5, 1)
         (sw, _), _ = cv2.getTextSize(sim_text, font, 0.4, 1)
+        (qw, _), _ = cv2.getTextSize(sharp_text, font, 0.38, 1)
         pad = 6
-        panel_w = lw + sw + pad * 3
+        gap = pad
+        panel_w = lw + sw + (qw + gap if sharp_text else 0) + pad * 3
         panel_h = lh + pad * 2
         ly = y2 + 6
         if ly + panel_h > frame.shape[0] - 70:
@@ -257,6 +272,20 @@ def draw_faces(
             frame, sim_text, (lx + pad + lw + pad, ly + pad + lh - 4),
             font, 0.4, COLOR_TEXT_SECONDARY, 1, cv2.LINE_AA,
         )
+        if sharp_text:
+            # Higher Laplacian variance = sharper. Color codes the value:
+            # green (>=180), amber (>=80), red (<80).
+            if track.sharpness >= 180:
+                qc = COLOR_ACTIVE
+            elif track.sharpness >= 80:
+                qc = COLOR_UNKNOWN
+            else:
+                qc = COLOR_LOCKED
+            cv2.putText(
+                frame, sharp_text,
+                (lx + pad + lw + pad + sw + gap, ly + pad + lh - 4),
+                font, 0.38, qc, 1, cv2.LINE_AA,
+            )
 
 
 def draw_active_crown(
@@ -725,6 +754,51 @@ def draw_locked_indicator(
     overlay = frame.copy()
     cv2.rectangle(overlay, (0, 58), (w, h), COLOR_LOCKED, 3)
     cv2.addWeighted(overlay, 0.16, frame, 0.84, 0, frame)
+
+
+def draw_session_log(
+    frame: np.ndarray,
+    rows: List[List[str]],
+) -> None:
+    """Tiny bottom-right panel showing the last 3 logged actions."""
+    if not rows:
+        return
+    font = cv2.FONT_HERSHEY_DUPLEX
+    title = "RECENT ACTIONS"
+    items: List[str] = []
+    for row in rows[-3:]:
+        if len(row) < 4:
+            continue
+        ts = row[0].split("T")[-1] if "T" in row[0] else row[0]
+        gesture = row[2]
+        action = row[3]
+        items.append(f"{ts}  {_gesture_label(gesture)} -> {_action_label(action)}")
+    if not items:
+        return
+
+    line_h = 16
+    padding = 10
+    (title_w, title_h), _ = cv2.getTextSize(title, font, 0.38, 1)
+    widths = [cv2.getTextSize(s, font, 0.36, 1)[0][0] for s in items]
+    panel_w = max(title_w, max(widths)) + padding * 2
+    panel_h = title_h + 6 + len(items) * line_h + padding * 2
+    x = frame.shape[1] - panel_w - 14
+    # Lift above the centered help hint at the very bottom.
+    y = frame.shape[0] - panel_h - 56
+
+    _draw_alpha_rect(frame, x, y, x + panel_w, y + panel_h, COLOR_PANEL_BG, 0.78)
+    cv2.rectangle(frame, (x, y), (x + panel_w, y + panel_h), COLOR_PANEL_BORDER, 1, cv2.LINE_AA)
+    cv2.putText(
+        frame, title, (x + padding, y + padding + title_h - 2),
+        font, 0.38, COLOR_ACCENT, 1, cv2.LINE_AA,
+    )
+    ry = y + padding + title_h + line_h - 4
+    for line in items:
+        cv2.putText(
+            frame, line, (x + padding, ry),
+            font, 0.36, COLOR_TEXT_SECONDARY, 1, cv2.LINE_AA,
+        )
+        ry += line_h
 
 
 def draw_help_hint(frame: np.ndarray) -> None:

@@ -45,6 +45,10 @@ class FaceTrack:
     last_attempt: float = 0.0
     seen_count: int = 1
     pending_identification: bool = True
+    # Face-quality score: variance of the Laplacian on the grayscale crop.
+    # Higher = sharper. Recomputed periodically to keep the camera loop cheap.
+    sharpness: float = 0.0
+    sharpness_at: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -277,6 +281,7 @@ class FaceTracker:
 
         self._drop_stale(now)
         self._identify_ready_tracks(frame, now)
+        self._update_quality(frame, now)
         self._select_active(frame.shape, now)
         return self.visible_tracks(now)
 
@@ -335,6 +340,27 @@ class FaceTracker:
             self.tracks.pop(tid, None)
             if self.active_track_id == tid:
                 self.active_track_id = None
+
+    def _update_quality(self, frame: np.ndarray, now: float) -> None:
+        """Compute Laplacian-variance sharpness for each visible face track.
+
+        Sharpness is purely informational - it's shown next to the identity
+        on the HUD but does NOT gate control. The original project had no
+        face-quality scoring at all.
+        """
+        refresh = float(self.config["face"].get("quality_refresh_seconds", 0.5))
+        for track in self.visible_tracks(now):
+            if track.sharpness_at and now - track.sharpness_at < refresh:
+                continue
+            crop = crop_face(frame, track.bbox)
+            if crop is None:
+                continue
+            try:
+                gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+                track.sharpness = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+                track.sharpness_at = now
+            except Exception:
+                pass
 
     def _identify_ready_tracks(self, frame: np.ndarray, now: float) -> None:
         face_cfg = self.config["face"]
